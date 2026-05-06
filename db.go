@@ -74,13 +74,26 @@ type Stat struct {
 //
 // It will open the wal files in the database directory and load the index from them.
 // Return the DB instance, or an error if any.
+//todo
+/*
+我的理解：rosedb的流程是：磁盘中存放多个文件，每个文件里的数据格式是
+crc：基于其它字段生成的校验和，用于验证数据的完整性和准确性；
+tstamp：由 32 位整数表示的时间戳，内部使用，不对外暴露；
+ksz：key size，记录了 key 的大小；
+value_sz：value size，记录了 value 的大小；
+key：实际存储的 key；
+value：实际存储的 value；
+然后内存中维护一个map[key][file_id,value_sz,value_pos,tstamp]
+查询的时候从map里获取文件id，根据sz和pos找到具体文件然后返回，所以我理解多个.seg的作用，无非就是多个文件
+整个问题：
+1. hint文件是干嘛的？起到了什么作用？*/
 func Open(options Options) (*DB, error) {
 	// check options
 	if err := checkOptions(options); err != nil {
 		return nil, err
 	}
 
-	// create data directory if not exist
+	//如果不存在，就创建数据目录
 	if _, err := os.Stat(options.DirPath); err != nil {
 		if err := os.MkdirAll(options.DirPath, os.ModePerm); err != nil {
 			return nil, err
@@ -88,6 +101,9 @@ func Open(options Options) (*DB, error) {
 	}
 
 	// create file lock, prevent multiple processes from using the same database directory
+	//todo flock是文件锁，比如flock.new(a/b/c)，就会出现一个a/b/c/flock的文件，加锁是基于这个文件本身的
+	// 我试着运行了下，会出现一个flock的文件，那我猜测锁是基于这个文件本身的了，尝试获取就是该这个文件的
+	// 某个字段的状态，放就是把状态该回去
 	fileLock := flock.New(filepath.Join(options.DirPath, fileLockName))
 	hold, err := fileLock.TryLock()
 	if err != nil {
@@ -98,6 +114,8 @@ func Open(options Options) (*DB, error) {
 	}
 
 	// load merge files if exists
+	// todo 不知道mergeFiles是干嘛的，得仔细看看。盲猜多个段合并是靠merge文件
+	//  第一次运行的时候不会走这个逻辑，可以先跳过
 	if err = loadMergeFiles(options.DirPath); err != nil {
 		return nil, err
 	}
@@ -113,11 +131,16 @@ func Open(options Options) (*DB, error) {
 	}
 
 	// open data files
+	//todo用wal的包打开文件，调用wal.open()过程是：
+	// 找到传入目录下的所有后缀是${dataFileNameSuffix}，前缀是数字的文件(0001.seg)，
+	// 然后把文件open，把句柄放到wal里，排序最大的文件是activeSegment,其他全部在olderSegments中
+	// 没有就新建一个从1开始
 	if db.dataFiles, err = db.openWalFiles(); err != nil {
 		return nil, err
 	}
 
 	// load index
+	// 这个loadindex是干嘛的？用来建立map的？
 	if err = db.loadIndex(); err != nil {
 		return nil, err
 	}
@@ -170,6 +193,7 @@ func (db *DB) openWalFiles() (*wal.WAL, error) {
 
 func (db *DB) loadIndex() error {
 	// load index from hint file
+	//todo 这个难道是用来建立hint版本的map的吗？
 	if err := db.loadIndexFromHintFile(); err != nil {
 		return err
 	}

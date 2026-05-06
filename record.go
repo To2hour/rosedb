@@ -137,6 +137,11 @@ func encodeHintRecord(key []byte, pos *wal.ChunkPosition) []byte {
 }
 
 func decodeHintRecord(buf []byte) ([]byte, *wal.ChunkPosition) {
+	//todo 这里我是真看不懂了，完完全全的一点看不懂
+	//比如一开始，idx=0，buf[0:]就是buf所有的数据，然后binary.Uvarint有啥用，返回啥。我都不知道
+	//binary.Uvarint好像作用是读取buf的第一个无符号整数并返回，segmentId就是这个数的值，n是这个的长度
+	//但我测试了下，在my_test.go的TestBinaryUvarint方法。这里不会脏读吗
+	//好像不会，这里输入的[]byte好像是自己put进去的。自己咋put的当然就是咋解开
 	idx := 0
 	// SegmentId
 	segmentId, n := binary.Uvarint(buf[idx:])
@@ -152,7 +157,7 @@ func decodeHintRecord(buf []byte) ([]byte, *wal.ChunkPosition) {
 	idx += n
 	// Key
 	key := buf[idx:]
-
+	//todo 这个好像是存的map[key][ChunkPosition]，不过这个是hint的
 	return key, &wal.ChunkPosition{
 		SegmentId:   wal.SegmentID(segmentId),
 		BlockNumber: uint32(blockNumber),

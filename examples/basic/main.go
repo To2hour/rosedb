@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"runtime"
 
 	"github.com/rosedblabs/rosedb/v2"
@@ -14,15 +13,15 @@ func main() {
 	options := rosedb.DefaultOptions
 	sysType := runtime.GOOS
 	if sysType == "windows" {
-		options.DirPath = "C:\\rosedb_basic"
+		options.DirPath = "E:\\study\\goLang\\code\\rosedb\\examples\\example"
 	} else {
 		options.DirPath = "/tmp/rosedb_basic"
 	}
 
 	// remove data dir, for test, there's no need to keep any file or directory on disk
-	defer func() {
-		_ = os.RemoveAll(options.DirPath)
-	}()
+	//defer func() {
+	//	_ = os.RemoveAll(options.DirPath)
+	//}()
 
 	// open a database
 	db, err := rosedb.Open(options)
