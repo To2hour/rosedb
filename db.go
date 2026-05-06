@@ -28,6 +28,7 @@ const (
 )
 
 // DB represents a ROSEDB database instance.
+// ttt
 // It is built on the bitcask model, which is a log-structured storage.
 // It uses WAL to write data, and uses an in-memory index to store the key
 // and the position of the data in the WAL,
