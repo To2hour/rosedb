@@ -38,7 +38,7 @@ const (
 //
 // But since we should store all keys and their positions(index) in memory,
 // our total data size is limited by the memory size.
-//
+// 111
 // So if your memory can almost hold all the keys, ROSEDB is the perfect storage engine for you.
 type DB struct {
 	dataFiles        *wal.WAL // data files are a sets of segment files in WAL.
